@@ -1,0 +1,55 @@
+const { chromium } = require('playwright');
+(async () => {
+  const [,, file] = process.argv;
+  const b = await chromium.launch({ ignoreDefaultArgs: ['--hide-scrollbars'] });
+  const res = []; const ok = (n, c, x) => { res.push([n, !!c]); console.log((c ? 'PASS ' : 'FAIL ') + n + (x !== undefined ? '  ' + JSON.stringify(x) : '')); };
+  // --- keyboard ---
+  let ctx = await b.newContext({ viewport: { width: 1280, height: 720 } }); let p = await ctx.newPage();
+  const errs = []; p.on('console', m => { if (['error','warning'].includes(m.type())) errs.push(m.text()); }); p.on('pageerror', e => errs.push(e.message));
+  await p.goto('file://' + file); await p.waitForTimeout(500);
+  await p.focus('#tab-publications');
+  await p.keyboard.press('End'); await p.waitForTimeout(300);
+  ok('End selects the 4th (cat) tab', await p.evaluate(() => document.getElementById('tab-cat').getAttribute('aria-selected') === 'true' && location.hash === '#cat'));
+  ok('focus stays on cat tab', await p.evaluate(() => document.activeElement.id === 'tab-cat'));
+  ok('cat panel visible, others hidden', await p.evaluate(() => !document.getElementById('panel-cat').hidden && document.getElementById('panel-publications').hidden && document.getElementById('panel-projects').hidden && document.getElementById('panel-links').hidden));
+  await p.keyboard.press('ArrowRight'); await p.waitForTimeout(300);
+  ok('ArrowRight wraps to publications', await p.evaluate(() => location.hash === '#publications'));
+  await p.keyboard.press('ArrowLeft'); await p.waitForTimeout(300);
+  ok('ArrowLeft wraps back to cat', await p.evaluate(() => location.hash === '#cat'));
+  await p.keyboard.press('Home'); await p.waitForTimeout(300);
+  ok('Home selects publications', await p.evaluate(() => location.hash === '#publications'));
+  await p.keyboard.press('End'); await p.waitForTimeout(500);
+  const pose0 = await p.evaluate(() => document.getElementById('cat-stage').dataset.pose);
+  await p.keyboard.press('Tab'); await p.waitForTimeout(100);
+  ok('Tab moves focus to the stage button', await p.evaluate(() => document.activeElement.id === 'cat-stage'));
+  await p.keyboard.press('Enter'); await p.waitForTimeout(1500);
+  const pose1 = await p.evaluate(() => document.getElementById('cat-stage').dataset.pose);
+  ok('Enter changes the pose', pose1 !== pose0, [pose0, pose1]);
+  await p.keyboard.press('Space'); await p.waitForTimeout(1500);
+  const pose2 = await p.evaluate(() => document.getElementById('cat-stage').dataset.pose);
+  ok('Space changes the pose', pose2 !== pose1, [pose1, pose2]);
+  ok('status announces the pose', await p.evaluate(() => /^The cat is /.test(document.getElementById('cat-status').textContent)), await p.evaluate(() => document.getElementById('cat-status').textContent));
+  ok('stage has an accessible name', await p.evaluate(() => document.getElementById('cat-stage').getAttribute('aria-label')));
+  ok('canvas hidden from AT', await p.evaluate(() => document.getElementById('cat-canvas').getAttribute('aria-hidden') === 'true'));
+  ok('cat tab has a name and no visible text', await p.evaluate(() => { const t = document.getElementById('tab-cat'); return t.getAttribute('aria-label') && t.textContent.trim() === ''; }));
+  // pointer outside the cat does nothing
+  const before = await p.evaluate(() => document.getElementById('cat-stage').dataset.pose);
+  await p.mouse.click(60, 650); await p.waitForTimeout(400);
+  ok('click on empty wall/floor does not change the pose', before === await p.evaluate(() => document.getElementById('cat-stage').dataset.pose));
+  ok('no console errors', errs.length === 0, errs);
+  await ctx.close();
+  // --- reduced motion ---
+  ctx = await b.newContext({ viewport: { width: 1280, height: 720 }, reducedMotion: 'reduce' }); p = await ctx.newPage();
+  const errs2 = []; p.on('console', m => { if (['error','warning'].includes(m.type())) errs2.push(m.text()); }); p.on('pageerror', e => errs2.push(e.message));
+  await p.goto('file://' + file + '#cat'); await p.waitForTimeout(600);
+  const snap = () => p.evaluate(() => { const cv = document.getElementById('cat-canvas'); return cv.toDataURL(); });
+  const s1 = await snap(); await p.waitForTimeout(2500); const s2 = await snap();
+  ok('reduced motion: scene is static', s1 === s2);
+  const rp = await p.evaluate(() => document.getElementById('cat-stage').dataset.pose);
+  const box = await p.evaluate(() => { const r = document.getElementById('cat-stage').getBoundingClientRect(); return [r.left + r.width/2, r.top + r.height*0.62]; });
+  await p.mouse.click(box[0], box[1]); await p.waitForTimeout(100);
+  ok('reduced motion: click changes the pose instantly', rp !== await p.evaluate(() => document.getElementById('cat-stage').dataset.pose));
+  ok('reduced motion: no console errors', errs2.length === 0, errs2);
+  await ctx.close();
+  console.log(res.filter(r => !r[1]).length ? 'SOME FAILED' : 'ALL PASSED'); await b.close();
+})();
