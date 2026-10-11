@@ -26,11 +26,11 @@ Notes:
 
 ## Cat room
 
-The square, icon-only fourth tab at the right end of the tab row opens a room with an animated pixel-art cat (a golden shaded British shorthair type). The cat rests in one of five poses: loafing, lying on its side, asleep on its back, sprawled out, and sitting. It moves only slightly: it breathes, blinks, flicks an ear, sways its tail, and now and then turns its head. The pose changes by itself every 30 seconds and whenever the cat is clicked (or Enter or Space is pressed while the room has keyboard focus). The old pose dissolves into the new one, and a heart rises from the cat after a click. The wall clock shows the visitor's local time.
+The square, icon-only fourth tab at the right end of the tab row opens a room with an animated pixel-art cat (a golden shaded British shorthair type) in a scholars' library hall: a stone wall with carved wainscot and ceiling arches, a chandelier, two arched windows with curtains, a bookcase with a ladder, a scroll rack, a potion shelf, banners, a lectern, a candelabra, an armillary sphere, a floating orb, and a rug. Narrower screens show fewer of these objects (one window on a phone). The cat rests in one of five poses: loafing, lying on its side, asleep on its back, sprawled out, and sitting. It moves only slightly: it breathes, blinks, flicks an ear, sways its tail, and now and then turns its head. The room moves a little as well: stars twinkle, candle flames flicker, the orb bobs, and dust drifts down from the window. The pose changes by itself every 30 seconds and whenever the cat is clicked (or Enter or Space is pressed while the room has keyboard focus). The old pose dissolves into the new one, and a heart rises from the cat after a click.
 
 When the system setting for reduced motion is on, nothing animates and the pose changes only on click, Enter, or Space. The animation stops when another tab is selected or the browser tab is hidden.
 
-The cat is stored as the `CAT` object in the script (run-length rows; each pose is a stack of layers that the room moves or swaps by whole pixels). The room itself (window, rug, props) is drawn by the code in the section `Cat room`. To change how long a pose lasts, edit `CAT_EVERY` (milliseconds) there.
+The cat is stored as the `CAT` object in the script (run-length rows; each pose is a stack of layers that the room moves or swaps by whole pixels). The room is drawn by code: the `rm...` functions (one per object, for example `rmShelf`, `rmArchWindow`, and `rmCandelabra`) draw the objects, and the section `Room: layout` places them according to the width of the screen. To change how long a pose lasts, edit `CAT_EVERY` (milliseconds) in the section `Cat room`.
 
 ## Fonts
 
@@ -41,4 +41,4 @@ Both fonts are embedded as subsetted WOFF2 files and are used under the SIL Open
 
 ## Graphics
 
-All pixel art is original and drawn in code from character grids (the `SPR` object in the script) or, for the cat, from run-length rows (the `CAT` object); the color palette is defined as CSS custom properties.
+All pixel art is original and drawn in code from character grids (the `SPR` object in the script) or, for the cat, from run-length rows (the `CAT` object), and the cat room is drawn by the `rm...` functions; the color palette is defined as CSS custom properties.
