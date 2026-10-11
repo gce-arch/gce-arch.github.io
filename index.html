@@ -2599,8 +2599,9 @@ function rmWinInOuter(g, px, py) {
   var dx = px + 0.5 - g.cx, dy = yc - g.cy;
   return dx * dx + dy * dy <= g.ro * g.ro;
 }
-function rmArchWindow(c, x, y, w, h, kind, seed) {
+function rmArchWindow(c, x, y, w, h, kind, seed, moon) {
   kind = kind === 'tower' ? 'tower' : 'city';
+  var withMoon = moon !== false;
   seed = seed | 0;
   var g = rmWinGeom(x, y, w, h);
   var rng = rmRng(seed * 7919 + (kind === 'tower' ? 31 : 17));
@@ -2678,13 +2679,15 @@ function rmArchWindow(c, x, y, w, h, kind, seed) {
     mcx = moonLeft ? leftC : rightC;
     mcy = paneTop + Math.round((paneBot - paneTop) * 0.42);
     mhr = mr + 2.6;
-    halo(mcx, mcy, mr, mr + 0.8, mhr);
-    for (j = -mr - 1; j <= mr; j++) for (i = -mr - 1; i <= mr; i++) {
-      var d1 = Math.sqrt((i + 0.5) * (i + 0.5) + (j + 0.5) * (j + 0.5));
-      var d2 = Math.sqrt((i + 0.5 - mr * 0.62) * (i + 0.5 - mr * 0.62) + (j + 0.5 + mr * 0.22) * (j + 0.5 + mr * 0.22));
-      if (d1 <= mr && d2 > mr * 0.9) soft(mcx + i, mcy + j, d1 > mr - 1.1 && i > 0 ? K('p3') : K('p4'));
+    if (withMoon) {
+      halo(mcx, mcy, mr, mr + 0.8, mhr);
+      for (j = -mr - 1; j <= mr; j++) for (i = -mr - 1; i <= mr; i++) {
+        var d1 = Math.sqrt((i + 0.5) * (i + 0.5) + (j + 0.5) * (j + 0.5));
+        var d2 = Math.sqrt((i + 0.5 - mr * 0.62) * (i + 0.5 - mr * 0.62) + (j + 0.5 + mr * 0.22) * (j + 0.5 + mr * 0.22));
+        if (d1 <= mr && d2 > mr * 0.9) soft(mcx + i, mcy + j, d1 > mr - 1.1 && i > 0 ? K('p3') : K('p4'));
+      }
+      killDisc(mcx, mcy, mr + 1);
     }
-    killDisc(mcx, mcy, mr + 1);
   } else {
     mr = clamp(Math.round(gw * 0.17), 4, 8);
     mcx = moonLeft ? leftC : rightC;
@@ -2699,25 +2702,27 @@ function rmArchWindow(c, x, y, w, h, kind, seed) {
     }
     mhr = mr + 3.4;
     mcy = paneTop + mr + 4;
-    halo(mcx, mcy, mr, mr + 1.2, mhr);
-    var hx = mcx - mr * 0.35, hy = mcy - mr * 0.35;
-    for (j = -mr; j < mr; j++) for (i = -mr; i < mr; i++) {
-      var dd = Math.sqrt((i + 0.5) * (i + 0.5) + (j + 0.5) * (j + 0.5));
-      if (dd > mr) continue;
-      var dh = Math.sqrt((mcx + i + 0.5 - hx) * (mcx + i + 0.5 - hx) + (mcy + j + 0.5 - hy) * (mcy + j + 0.5 - hy));
-      var mc = dh < mr * 0.72 ? K('p4') : K('p3');
-      if (dd > mr - 1.05 && (i + j) > 0 && dh >= mr * 0.72) mc = K('p2');
-      soft(mcx + i, mcy + j, mc);
-    }
-    var cr = [[0.3, 0.22, 2, 2], [-0.52, 0.42, 2, 1], [-0.18, -0.5, 1, 1], [0.56, -0.2, 1, 1], [0.08, 0.62, 1, 1]];
-    for (i = 0; i < cr.length; i++) {
-      var cxp = mcx + Math.round(cr[i][0] * mr), cyp = mcy + Math.round(cr[i][1] * mr);
-      for (j = 0; j < cr[i][3]; j++) for (k = 0; k < cr[i][2]; k++) {
-        var qd = Math.sqrt((cxp + k - mcx + 0.5) * (cxp + k - mcx + 0.5) + (cyp + j - mcy + 0.5) * (cyp + j - mcy + 0.5));
-        if (qd < mr - 1.2) soft(cxp + k, cyp + j, K('s3'));
+    if (withMoon) {
+      halo(mcx, mcy, mr, mr + 1.2, mhr);
+      var hx = mcx - mr * 0.35, hy = mcy - mr * 0.35;
+      for (j = -mr; j < mr; j++) for (i = -mr; i < mr; i++) {
+        var dd = Math.sqrt((i + 0.5) * (i + 0.5) + (j + 0.5) * (j + 0.5));
+        if (dd > mr) continue;
+        var dh = Math.sqrt((mcx + i + 0.5 - hx) * (mcx + i + 0.5 - hx) + (mcy + j + 0.5 - hy) * (mcy + j + 0.5 - hy));
+        var mc = dh < mr * 0.72 ? K('p4') : K('p3');
+        if (dd > mr - 1.05 && (i + j) > 0 && dh >= mr * 0.72) mc = K('p2');
+        soft(mcx + i, mcy + j, mc);
       }
+      var cr = [[0.3, 0.22, 2, 2], [-0.52, 0.42, 2, 1], [-0.18, -0.5, 1, 1], [0.56, -0.2, 1, 1], [0.08, 0.62, 1, 1]];
+      for (i = 0; i < cr.length; i++) {
+        var cxp = mcx + Math.round(cr[i][0] * mr), cyp = mcy + Math.round(cr[i][1] * mr);
+        for (j = 0; j < cr[i][3]; j++) for (k = 0; k < cr[i][2]; k++) {
+          var qd = Math.sqrt((cxp + k - mcx + 0.5) * (cxp + k - mcx + 0.5) + (cyp + j - mcy + 0.5) * (cyp + j - mcy + 0.5));
+          if (qd < mr - 1.2) soft(cxp + k, cyp + j, K('s3'));
+        }
+      }
+      killDisc(mcx, mcy, mr + 1);
     }
-    killDisc(mcx, mcy, mr + 1);
   }
   function layer(tops, col) {
     for (var cc = 0; cc < gw; cc++) for (var hh = 1; hh <= tops[cc]; hh++) put(gx + cc, gb - hh, col);
@@ -2840,12 +2845,13 @@ function rmArchWindow(c, x, y, w, h, kind, seed) {
   R(c, sx0 + 1, sy0 + g.sillH - 2, sw - 2, 1, K('s1'));
   R(c, x + 1, y + h, w - 2, 1, K('ink'));
   for (i = x + 2; i < x + w - 2; i++) if (((i - x) & 1) === 0) R(c, i, y + h + 1, 1, 1, K('ink'));
-  var stars = [], tries = 0, want = clamp(Math.round(gw * gh / 150), 7, 20), skyLimit = gy + Math.round(gh * (kind === 'city' ? 0.6 : 0.66));
+  var stars = [], tries = 0, want = clamp(Math.round(gw * gh / 150) + (withMoon ? 0 : 3), 7, 22), skyLimit = gy + Math.round(gh * (kind === 'city' ? 0.6 : 0.66));
   function clearR(qx, qy, rad) {
     for (var dy = -rad; dy <= rad; dy++) for (var dx = -rad; dx <= rad; dx++) if (!open(qx + dx, qy + dy)) return false;
     return true;
   }
   function nearMoon(qx, qy, rad) {
+    if (!withMoon) return false;
     var ddx = qx + 0.5 - mcx - 0.5, ddy = qy + 0.5 - mcy - 0.5;
     return Math.sqrt(ddx * ddx + ddy * ddy) <= mhr + rad;
   }
@@ -4517,8 +4523,8 @@ function roomBuild(L) {
     prop(c);
     return ret;
   }
-  function windowAt(x, kind, seed) {
-    var win = rmArchWindow(c, x, winTop, winW, winH, kind, seed);
+  function windowAt(x, kind, seed, moon) {
+    var win = rmArchWindow(c, x, winTop, winW, winH, kind, seed, moon);
     rmCurtains(c, x, winTop, winW, winH);
     D.wins.push(win);
     return win;
@@ -4533,8 +4539,9 @@ function roomBuild(L) {
 
   /* windows: 'city' on the left, 'tower' on the right (one centered window in the narrow room) */
   D.beam = { x0: wxA + 2, x1: wxA + winW - 2, y0: winTop + winH + 6 };
-  windowAt(wxA, 'city', 11);
-  if (tier >= 2) windowAt(wxB, 'tower', 23);
+  /* there is one Moon: it shines in the 'tower' window only (the one window of the narrow room is the tower window) */
+  if (tier === 1) windowAt(wxA, 'tower', 23, true);
+  else { windowAt(wxA, 'city', 11, false); windowAt(wxB, 'tower', 23, true); }
 
   /* light from above: a chandelier on the ceiling arch (or two sconces on a short narrow wall) */
   if (tier > 1 || tall) lit(function (cc) { return rmChandelier(cc, cx, 3, tier === 1 ? 36 : 44); }, 16, 0.25, [0, 2, 5]);
